@@ -79,7 +79,7 @@ func (tr *taskRepo) write(tasks []models.Task) error {
 	return nil
 }
 
-func (tr *taskRepo) CreateTask(task models.Task) *errr.AppError {
+func (tr *taskRepo) SaveTask(task models.Task) *errr.AppError {
 	task.Status = 0
 	task.ID = time.Now().Unix()
 	tr.mu.Lock()

@@ -6,13 +6,13 @@ import (
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
-func NewRouter(handler ports.Handler) http.Handler {
+func NewRouter(handler ports.TaskHandlers) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /tasks", handler.GetTasks)
-	mux.HandleFunc("POST /tasks", handler.CreateTask)
-	mux.HandleFunc("PUT /tasks/{id}", handler.UpdateTask)
-	mux.HandleFunc("DELETE /tasks/{id}", handler.DeleteTask)
+	mux.HandleFunc("GET /tasks", handler.GetTasksHandler)
+	mux.HandleFunc("POST /tasks", handler.CreateTaskHandler)
+	mux.HandleFunc("PUT /tasks/{id}", handler.UpdateTaskHandler)
+	mux.HandleFunc("DELETE /tasks/{id}", handler.DeleteTaskHandler)
 
 	return mux
 }

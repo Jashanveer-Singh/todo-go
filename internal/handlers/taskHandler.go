@@ -19,7 +19,7 @@ func NewHandler(repo ports.TaskRepo) *handler {
 	}
 }
 
-func (h handler) GetTasks(w http.ResponseWriter, r *http.Request) {
+func (h handler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	tasks, appErr := h.repo.GetTasks()
 	if appErr != nil {
 		http.Error(w, appErr.Message, 500)
@@ -42,7 +42,7 @@ func (h handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	w.Write(tasksjson)
 }
 
-func (h handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+func (h handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid id", http.StatusBadRequest)
@@ -66,7 +66,7 @@ func (h handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(""))
 }
 
-func (h handler) CreateTask(w http.ResponseWriter, r *http.Request) {
+func (h handler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var taskRequest models.TaskRequestDto
 	err := json.NewDecoder(r.Body).Decode(&taskRequest)
 	if err != nil {
@@ -76,7 +76,7 @@ func (h handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	task := taskRequest.ToTask()
 
-	appErr := h.repo.CreateTask(task)
+	appErr := h.repo.SaveTask(task)
 	if appErr != nil {
 		http.Error(w, appErr.Message, http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (h handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(""))
 }
 
-func (h handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+func (h handler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, "invalid Id", http.StatusBadRequest)
