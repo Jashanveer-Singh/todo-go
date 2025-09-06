@@ -21,6 +21,12 @@ func NewTaskService(taskRepo ports.TaskRepo) *taskService {
 
 func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError {
 	task := taskReq.ToTask()
+	if !task.IsValidTask() {
+		return &errr.AppError{
+			Message: "Invalid task",
+			Code:    http.StatusBadRequest,
+		}
+	}
 
 	appErr := ts.taskRepo.SaveTask(task)
 	if appErr != nil {
@@ -36,6 +42,13 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 		return &errr.AppError{
 			Code:    http.StatusBadRequest,
 			Message: "invalid id",
+		}
+	}
+
+	if taskReq.Title == "" && taskReq.Desc == "" && !taskReq.IsValidStatus() {
+		return &errr.AppError{
+			Message: "Invalid task format",
+			Code:    http.StatusBadRequest,
 		}
 	}
 	task := taskReq.ToTask()

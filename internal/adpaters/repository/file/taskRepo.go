@@ -42,9 +42,6 @@ type taskRepo struct {
 }
 
 func (tr *taskRepo) getTasks() ([]models.Task, error) {
-	// tr.mu.RLock()
-	// defer tr.mu.RUnlock()
-
 	tasks := make([]models.Task, 0)
 
 	taskjson, err := os.ReadFile(tr.fp)
@@ -67,9 +64,6 @@ func (tr *taskRepo) write(tasks []models.Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to marshal tasks to json.\n%s", err.Error())
 	}
-
-	// tr.mu.Lock()
-	// defer tr.mu.Unlock()
 
 	err = os.WriteFile(tr.fp, taskjson, 0644)
 	if err != nil {
@@ -112,14 +106,13 @@ func (tr *taskRepo) UpdateTask(id int64, task models.Task) *errr.AppError {
 	for i := range tasks {
 		if tasks[i].ID == id {
 			notFound = false
-			// tasks[i] = task
 			if len(task.Title) != 0 {
 				tasks[i].Title = task.Title
 			}
 			if len(task.Desc) != 0 {
 				tasks[i].Desc = task.Desc
 			}
-			if task.Status == 0 || task.Status == 1 {
+			if task.IsValidStatus() {
 				tasks[i].Status = task.Status
 			}
 			break

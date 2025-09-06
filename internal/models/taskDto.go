@@ -11,6 +11,15 @@ type TaskRequestDto struct {
 	Status string `json:"status,omitempty"`
 }
 
+func (trd TaskRequestDto) IsValidStatus() bool {
+	switch trd.Status {
+	default:
+		return false
+	case "Pending", "Done":
+		return true
+	}
+}
+
 func (t TaskRequestDto) ToTask() Task {
 	var status int
 	switch t.Status {
@@ -19,7 +28,7 @@ func (t TaskRequestDto) ToTask() Task {
 	case "Done":
 		status = 1
 	default:
-		status = 2
+		status = -1
 	}
 	return Task{
 		Title:  t.Title,

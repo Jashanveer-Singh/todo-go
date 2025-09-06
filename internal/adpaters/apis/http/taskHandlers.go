@@ -44,6 +44,7 @@ func (h taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&taskReq)
 	if err != nil {
 		http.Error(w, "Invalid Body", http.StatusBadRequest)
+		return
 	}
 
 	appErr := h.ts.UpdateTask(id, taskReq)
