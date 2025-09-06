@@ -9,6 +9,14 @@ type Task struct {
 	Status int    `json:"status"`
 }
 
+func (t Task) IsValidTask() bool {
+	if t.Title == "" || t.Desc == "" || !t.IsValidStatus() {
+		return false
+	}
+
+	return true
+}
+
 func (t Task) StatusAsText() string {
 	switch t.Status {
 	case 0:
@@ -21,7 +29,7 @@ func (t Task) StatusAsText() string {
 }
 
 func (t Task) IsValidStatus() bool {
-	return t.Status != 0 && t.Status != 1
+	return t.Status == 0 || t.Status == 1
 }
 
 func (t Task) ToDto() TaskResponseDto {
