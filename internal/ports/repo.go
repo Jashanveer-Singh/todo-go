@@ -1,10 +1,13 @@
 package ports
 
-import "github.com/Jashanveer-Singh/todo-go/internal/handlers/domain"
+import (
+	"github.com/Jashanveer-Singh/todo-go/internal/errr"
+	"github.com/Jashanveer-Singh/todo-go/internal/models"
+)
 
-type taskRepo interface {
-	CreateTask(task domain.Task) error
-	UpdateTask(id string, task domain.Task) error
-	DeleteTask(id string) error
-	GetTasks() ([]domain.Task, error)
+type TaskRepo interface {
+	CreateTask(task models.Task) *errr.AppError
+	UpdateTask(id int64, task models.Task) *errr.AppError
+	DeleteTask(id int64) *errr.AppError
+	GetTasks() ([]models.Task, *errr.AppError)
 }
