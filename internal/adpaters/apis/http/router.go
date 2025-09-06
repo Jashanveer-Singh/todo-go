@@ -1,4 +1,4 @@
-package handlers
+package http
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
-func NewRouter(handler ports.TaskHandlers) http.Handler {
+func newRouter(handler ports.TaskHandlers) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /tasks", handler.GetTasksHandler)
