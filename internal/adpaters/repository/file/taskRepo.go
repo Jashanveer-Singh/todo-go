@@ -2,7 +2,6 @@ package file
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -15,10 +14,10 @@ import (
 func NewTaskRepo(fp string) *taskRepo {
 	_, err := os.Stat(fp)
 	if os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "file: %s does not exist", fp)
+		fmt.Fprintf(os.Stderr, "file: %s does not exist\n", fp)
 	}
 	if os.IsPermission(err) {
-		fmt.Fprintf(os.Stderr, "not enough permissions for file: %s", fp)
+		fmt.Fprintf(os.Stderr, "not enough permissions for file: %s\n", fp)
 	}
 
 	if err != nil {
@@ -30,10 +29,6 @@ func NewTaskRepo(fp string) *taskRepo {
 		mu: sync.RWMutex{},
 		fp: fp,
 	}
-}
-
-func newRepoErr(err error) error {
-	return errors.New(fmt.Sprint("Repo Error: ", err.Error()))
 }
 
 type taskRepo struct {
@@ -60,12 +55,9 @@ func (tr *taskRepo) getTasks() ([]models.Task, error) {
 }
 
 func (tr *taskRepo) write(tasks []models.Task) error {
-	taskjson, err := json.Marshal(tasks)
-	if err != nil {
-		return fmt.Errorf("unable to marshal tasks to json.\n%s", err.Error())
-	}
+	taskjson, _ := json.Marshal(tasks)
 
-	err = os.WriteFile(tr.fp, taskjson, 0644)
+	err := os.WriteFile(tr.fp, taskjson, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to write tasks to file.\n%s", err.Error())
 	}
@@ -74,20 +66,19 @@ func (tr *taskRepo) write(tasks []models.Task) error {
 }
 
 func (tr *taskRepo) SaveTask(task models.Task) *errr.AppError {
-	task.Status = 0
 	task.ID = time.Now().Unix()
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 	tasks, err := tr.getTasks()
 	if err != nil {
-		return errr.NewUnexpectedError("Unable to create task due to internal server error")
+		return errr.NewUnexpectedError("Unable to save task due to internal server error")
 	}
 
 	tasks = append(tasks, task)
 
 	err = tr.write(tasks)
 	if err != nil {
-		return errr.NewUnexpectedError("Unable to create task due to internal server error")
+		return errr.NewUnexpectedError("Unable to save task due to internal server error")
 	}
 
 	return nil
@@ -150,7 +141,7 @@ func (tr *taskRepo) DeleteTask(id int64) *errr.AppError {
 	}
 
 	if notFound {
-		return errr.NewUnexpectedError("No task found with id")
+		return errr.NewUnexpectedError("no task found with id")
 	}
 
 	err = tr.write(tasks)
@@ -163,7 +154,7 @@ func (tr *taskRepo) DeleteTask(id int64) *errr.AppError {
 
 func (tr *taskRepo) GetTasks() ([]models.Task, *errr.AppError) {
 	tr.mu.RLock()
-	tr.mu.RUnlock()
+	defer tr.mu.RUnlock()
 
 	tasks, err := tr.getTasks()
 	if err != nil {
