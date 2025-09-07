@@ -1,10 +1,5 @@
 package models
 
-import (
-	"errors"
-	"strconv"
-)
-
 type TaskRequestDto struct {
 	Title  string `json:"title,omitempty"`
 	Desc   string `json:"desc,omitempty"`
@@ -20,9 +15,9 @@ func (trd TaskRequestDto) IsValidStatus() bool {
 	}
 }
 
-func (t TaskRequestDto) ToTask() Task {
+func (trd TaskRequestDto) ToTask() Task {
 	var status int
-	switch t.Status {
+	switch trd.Status {
 	case "Pending":
 		status = 0
 	case "Done":
@@ -31,8 +26,8 @@ func (t TaskRequestDto) ToTask() Task {
 		status = -1
 	}
 	return Task{
-		Title:  t.Title,
-		Desc:   t.Desc,
+		Title:  trd.Title,
+		Desc:   trd.Desc,
 		Status: status,
 	}
 }
@@ -42,28 +37,4 @@ type TaskResponseDto struct {
 	Title  string `json:"title"`
 	Desc   string `json:"desc"`
 	Status string `json:"status"`
-}
-
-func (t TaskResponseDto) ToTask() (Task, error) {
-	id, err := strconv.ParseInt(t.ID, 10, 64)
-	if err != nil {
-		return Task{}, errors.New("invalid Id")
-	}
-
-	var status int
-	switch t.Status {
-	case "Pending":
-		status = 0
-	case "Done":
-		status = 1
-	default:
-		status = 2
-	}
-
-	return Task{
-		ID:     id,
-		Title:  t.Title,
-		Desc:   t.Desc,
-		Status: status,
-	}, nil
 }
