@@ -21,6 +21,7 @@ func NewTaskService(taskRepo ports.TaskRepo) *taskService {
 
 func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError {
 	task := taskReq.ToTask()
+	task.Status = 0
 	if !task.IsValidTask() {
 		return &errr.AppError{
 			Message: "Invalid task",
