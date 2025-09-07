@@ -18,17 +18,17 @@ func newTaskHandler(ts ports.TaskService) *taskHandler {
 	}
 }
 
-func (h taskHandler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	taskRes, appErr := h.ts.GetTasks()
+func (th taskHandler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
+	taskRes, appErr := th.ts.GetTasks()
 
 	if appErr != nil {
-		http.Error(w, appErr.Message, 500)
+		http.Error(w, appErr.Message, appErr.Code)
 		return
 	}
 
 	tasksjson, err := json.Marshal(taskRes)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusInternalServerError)
+		http.Error(w, "Unexpected Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -36,7 +36,7 @@ func (h taskHandler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(tasksjson)
 }
 
-func (h taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
+func (th taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var taskReq models.TaskRequestDto
@@ -47,13 +47,14 @@ func (h taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appErr := h.ts.UpdateTask(id, taskReq)
+	appErr := th.ts.UpdateTask(id, taskReq)
 
 	if appErr != nil {
-		http.Error(w, appErr.Message, http.StatusInternalServerError)
+		http.Error(w, appErr.Message, appErr.Code)
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(""))
 }
 
@@ -61,16 +62,17 @@ func (th taskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 	var taskReq models.TaskRequestDto
 	err := json.NewDecoder(r.Body).Decode(&taskReq)
 	if err != nil {
-		http.Error(w, "Invalid request Body", http.StatusBadRequest)
+		http.Error(w, "Invalid Body", http.StatusBadRequest)
 		return
 	}
 
 	appErr := th.ts.CreateTask(taskReq)
 	if appErr != nil {
-		http.Error(w, appErr.Message, http.StatusInternalServerError)
+		http.Error(w, appErr.Message, appErr.Code)
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(""))
 }
 
@@ -78,9 +80,10 @@ func (th taskHandler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) 
 	id := r.PathValue("id")
 	appErr := th.ts.DeleteTask(id)
 	if appErr != nil {
-		http.Error(w, appErr.Message, http.StatusInternalServerError)
+		http.Error(w, appErr.Message, appErr.Code)
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(""))
 }
