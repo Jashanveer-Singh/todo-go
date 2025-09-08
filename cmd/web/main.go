@@ -21,11 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	fp := path.Join(homeDir, ".local", "todo", "tasks.json")
+	tasksFile := path.Join(homeDir, ".local", "todo", "tasks.json")
+	usersFile := path.Join(homeDir, ".local", "todo", "users.json")
 
-	repo := file.NewTaskRepo(fp)
-	taskService := services.NewTaskService(repo)
-	apiServer := http.NewHttpServer(taskService)
+	taskRepo := file.NewTaskRepo(tasksFile)
+	userRepo := file.NewUserRepo(usersFile)
+	taskService := services.NewTaskService(taskRepo)
+	userService := services.NewUserService(userRepo)
+	apiServer := http.NewHttpServer(taskService, userService)
 
 	log.Println("Starting Server at port:8080")
 	apiServer.ListenAndServe(":8080")
