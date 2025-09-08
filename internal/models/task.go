@@ -7,6 +7,7 @@ type Task struct {
 	Title  string `json:"title"`
 	Desc   string `json:"desc"`
 	Status int    `json:"status"`
+	UserID int64  `json:"user_id"`
 }
 
 func (t Task) IsValidTask() bool {
