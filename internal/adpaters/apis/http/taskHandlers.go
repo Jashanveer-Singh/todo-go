@@ -5,14 +5,14 @@ import (
 	"net/http"
 
 	"github.com/Jashanveer-Singh/todo-go/internal/models"
-	"github.com/Jashanveer-Singh/todo-go/internal/ports"
+	"github.com/Jashanveer-Singh/todo-go/internal/services"
 )
 
 type taskHandler struct {
-	ts ports.TaskService
+	ts services.TaskService
 }
 
-func newTaskHandler(ts ports.TaskService) *taskHandler {
+func newTaskHandler(ts services.TaskService) *taskHandler {
 	return &taskHandler{
 		ts,
 	}

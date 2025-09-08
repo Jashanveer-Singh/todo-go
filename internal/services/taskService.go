@@ -9,6 +9,13 @@ import (
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
+type TaskService interface {
+	CreateTask(models.TaskRequestDto) *errr.AppError
+	UpdateTask(id string, task models.TaskRequestDto) *errr.AppError
+	DeleteTask(id string) *errr.AppError
+	GetTasks() ([]models.TaskResponseDto, *errr.AppError)
+}
+
 type taskService struct {
 	taskRepo ports.TaskRepo
 }

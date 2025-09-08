@@ -3,17 +3,17 @@ package http
 import (
 	"net/http"
 
-	"github.com/Jashanveer-Singh/todo-go/internal/ports"
+	"github.com/Jashanveer-Singh/todo-go/internal/services"
 )
 
-func NewHttpServer(ts ports.TaskService) httpServer {
+func NewHttpServer(ts services.TaskService) httpServer {
 	return httpServer{
 		ts,
 	}
 }
 
 type httpServer struct {
-	ts ports.TaskService
+	ts services.TaskService
 }
 
 func (hs httpServer) ListenAndServe(addr string) {
