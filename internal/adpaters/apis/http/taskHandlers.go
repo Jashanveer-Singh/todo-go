@@ -19,7 +19,8 @@ func newTaskHandler(ts ports.TaskService) *taskHandler {
 }
 
 func (th taskHandler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	taskRes, appErr := th.ts.GetTasks()
+	userID := r.Header.Get("Authorization")
+	taskRes, appErr := th.ts.GetTasks(userID)
 
 	if appErr != nil {
 		http.Error(w, appErr.Message, appErr.Code)
@@ -37,6 +38,7 @@ func (th taskHandler) GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (th taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("Authorization")
 	id := r.PathValue("id")
 
 	var taskReq models.TaskRequestDto
@@ -47,7 +49,7 @@ func (th taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	appErr := th.ts.UpdateTask(id, taskReq)
+	appErr := th.ts.UpdateTask(id, taskReq, userID)
 
 	if appErr != nil {
 		http.Error(w, appErr.Message, appErr.Code)
@@ -59,6 +61,7 @@ func (th taskHandler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (th taskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("Authorization")
 	var taskReq models.TaskRequestDto
 	err := json.NewDecoder(r.Body).Decode(&taskReq)
 	if err != nil {
@@ -66,7 +69,7 @@ func (th taskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	appErr := th.ts.CreateTask(taskReq)
+	appErr := th.ts.CreateTask(taskReq, userID)
 	if appErr != nil {
 		http.Error(w, appErr.Message, appErr.Code)
 		return
@@ -77,8 +80,9 @@ func (th taskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (th taskHandler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("Authorization")
 	id := r.PathValue("id")
-	appErr := th.ts.DeleteTask(id)
+	appErr := th.ts.DeleteTask(id, userID)
 	if appErr != nil {
 		http.Error(w, appErr.Message, appErr.Code)
 		return
