@@ -6,8 +6,13 @@ import (
 )
 
 type TaskService interface {
-	CreateTask(models.TaskRequestDto) *errr.AppError
-	UpdateTask(id string, task models.TaskRequestDto) *errr.AppError
-	DeleteTask(id string) *errr.AppError
-	GetTasks() ([]models.TaskResponseDto, *errr.AppError)
+	CreateTask(taskReq models.TaskRequestDto, userID string) *errr.AppError
+	UpdateTask(id string, task models.TaskRequestDto, userID string) *errr.AppError
+	DeleteTask(id string, userID string) *errr.AppError
+	GetTasks(userID string) ([]models.TaskResponseDto, *errr.AppError)
+}
+
+type UserService interface {
+	CreateUser(models.UserRequestDto) *errr.AppError
+	Login(username, password string) (string, *errr.AppError)
 }
