@@ -19,9 +19,17 @@ func NewTaskService(taskRepo ports.TaskRepo) *taskService {
 	}
 }
 
-func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError {
+func (ts *taskService) CreateTask(taskReq models.TaskRequestDto, userId string) *errr.AppError {
+	id, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		return &errr.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid id",
+		}
+	}
 	task := taskReq.ToTask()
 	task.Status = 0
+	task.UserID = id
 	if !task.IsValidTask() {
 		return &errr.AppError{
 			Message: "Invalid task",
@@ -37,7 +45,11 @@ func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError 
 	return nil
 }
 
-func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto) *errr.AppError {
+func (ts *taskService) UpdateTask(
+	idString string,
+	taskReq models.TaskRequestDto,
+	userID string,
+) *errr.AppError {
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
 		return &errr.AppError{
@@ -46,6 +58,13 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 		}
 	}
 
+	userIDAsInt, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return &errr.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid id",
+		}
+	}
 	if taskReq.Title == "" && taskReq.Desc == "" && !taskReq.IsValidStatus() {
 		return &errr.AppError{
 			Message: "Invalid task format",
@@ -53,6 +72,7 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 		}
 	}
 	task := taskReq.ToTask()
+	task.UserID = userIDAsInt
 
 	appErr := ts.taskRepo.UpdateTask(id, task)
 	if appErr != nil {
@@ -62,7 +82,7 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 	return nil
 }
 
-func (ts *taskService) DeleteTask(idString string) *errr.AppError {
+func (ts *taskService) DeleteTask(idString string, userID string) *errr.AppError {
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
 		return &errr.AppError{
@@ -71,7 +91,15 @@ func (ts *taskService) DeleteTask(idString string) *errr.AppError {
 		}
 	}
 
-	appErr := ts.taskRepo.DeleteTask(id)
+	userIDAsInt, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return &errr.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid id",
+		}
+	}
+
+	appErr := ts.taskRepo.DeleteTask(id, userIDAsInt)
 	if appErr != nil {
 		return appErr
 	}
@@ -79,8 +107,15 @@ func (ts *taskService) DeleteTask(idString string) *errr.AppError {
 	return nil
 }
 
-func (ts *taskService) GetTasks() ([]models.TaskResponseDto, *errr.AppError) {
-	tasks, appErr := ts.taskRepo.GetTasks()
+func (ts *taskService) GetTasks(userId string) ([]models.TaskResponseDto, *errr.AppError) {
+	id, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		return []models.TaskResponseDto{}, &errr.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid id",
+		}
+	}
+	tasks, appErr := ts.taskRepo.GetTasks(id)
 	if appErr != nil {
 		return nil, appErr
 	}
