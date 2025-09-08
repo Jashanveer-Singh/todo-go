@@ -230,7 +230,7 @@ func Test_taskHandler_CreateTaskHandler(t *testing.T) {
 				}).Return(nil)
 			},
 			requestBody:  strings.NewReader(`{"title":"title","desc":"desc"}`),
-			wantStatus:   http.StatusNoContent,
+			wantStatus:   http.StatusCreated,
 			responseBody: "",
 		},
 		{
