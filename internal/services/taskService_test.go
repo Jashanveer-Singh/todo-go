@@ -7,7 +7,7 @@ import (
 
 	"github.com/Jashanveer-Singh/todo-go/internal/errr"
 	"github.com/Jashanveer-Singh/todo-go/internal/models"
-	"github.com/Jashanveer-Singh/todo-go/internal/ports/mocks"
+	"github.com/Jashanveer-Singh/todo-go/test/mocks"
 	"github.com/golang/mock/gomock"
 )
 
@@ -17,6 +17,7 @@ func Test_taskService_CreateTask(t *testing.T) {
 		setupTaskRepo func(mtr *mocks.MockTaskRepo)
 		taskReq       models.TaskRequestDto
 		appErr        *errr.AppError
+		claims        models.Claims
 	}{
 		{
 			name: "successfully created task",
@@ -24,7 +25,8 @@ func Test_taskService_CreateTask(t *testing.T) {
 				mtr.EXPECT().SaveTask(models.Task{
 					Title:  "title",
 					Desc:   "desc",
-					Status: 0,
+					Status: 2,
+					UserID: 1234,
 				}).Return(nil)
 			},
 			taskReq: models.TaskRequestDto{
@@ -33,6 +35,10 @@ func Test_taskService_CreateTask(t *testing.T) {
 				Status: "Pending",
 			},
 			appErr: nil,
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "successfully created task with invalid status input",
@@ -40,7 +46,8 @@ func Test_taskService_CreateTask(t *testing.T) {
 				mtr.EXPECT().SaveTask(models.Task{
 					Title:  "title",
 					Desc:   "desc",
-					Status: 0,
+					Status: 2,
+					UserID: 1234,
 				}).Return(nil)
 			},
 			taskReq: models.TaskRequestDto{
@@ -49,6 +56,10 @@ func Test_taskService_CreateTask(t *testing.T) {
 				Status: "sdaf",
 			},
 			appErr: nil,
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name:          "failed to create task because of empty title",
@@ -61,6 +72,10 @@ func Test_taskService_CreateTask(t *testing.T) {
 			appErr: &errr.AppError{
 				Message: "Invalid task",
 				Code:    http.StatusBadRequest,
+			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
 			},
 		},
 		{
@@ -75,6 +90,10 @@ func Test_taskService_CreateTask(t *testing.T) {
 				Message: "Invalid task",
 				Code:    http.StatusBadRequest,
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "task repo failed to save task",
@@ -82,7 +101,8 @@ func Test_taskService_CreateTask(t *testing.T) {
 				mtr.EXPECT().SaveTask(models.Task{
 					Title:  "title",
 					Desc:   "desc",
-					Status: 0,
+					Status: 2,
+					UserID: 1234,
 				}).Return(&errr.AppError{
 					Code:    0,
 					Message: "error message from task repo",
@@ -97,6 +117,10 @@ func Test_taskService_CreateTask(t *testing.T) {
 				Code:    0,
 				Message: "error message from task repo",
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -108,7 +132,7 @@ func Test_taskService_CreateTask(t *testing.T) {
 			tt.setupTaskRepo(mtr)
 			ts := NewTaskService(mtr)
 
-			got := ts.CreateTask(tt.taskReq)
+			got := ts.CreateTask(tt.taskReq, tt.claims)
 			if tt.appErr == nil && tt.appErr != got {
 				t.Errorf("CreateTask() failed, got err: %v.", got)
 				return
@@ -131,6 +155,7 @@ func Test_taskService_UpdateTask(t *testing.T) {
 		id            string
 		taskReq       models.TaskRequestDto
 		appErr        *errr.AppError
+		claims        models.Claims
 	}{
 		{
 			name: "successfully updated task",
@@ -139,6 +164,7 @@ func Test_taskService_UpdateTask(t *testing.T) {
 					Title:  "title",
 					Desc:   "desc",
 					Status: 0,
+					UserID: 1234,
 				}).Return(nil)
 			},
 			id: "1234",
@@ -148,6 +174,10 @@ func Test_taskService_UpdateTask(t *testing.T) {
 				Status: "Pending",
 			},
 			appErr: nil,
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "successfully created task with only title changed",
@@ -155,6 +185,7 @@ func Test_taskService_UpdateTask(t *testing.T) {
 				mtr.EXPECT().UpdateTask(int64(1234), models.Task{
 					Title:  "title",
 					Status: -1,
+					UserID: 1234,
 				}).Return(nil)
 			},
 			id: "1234",
@@ -162,6 +193,10 @@ func Test_taskService_UpdateTask(t *testing.T) {
 				Title: "title",
 			},
 			appErr: nil,
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name:          "failed to update task because of invalid id",
@@ -169,8 +204,12 @@ func Test_taskService_UpdateTask(t *testing.T) {
 			taskReq:       models.TaskRequestDto{},
 			id:            "1234r",
 			appErr: &errr.AppError{
-				Message: "invalid id",
+				Message: "Invalid task id",
 				Code:    http.StatusBadRequest,
+			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
 			},
 		},
 		{
@@ -182,6 +221,10 @@ func Test_taskService_UpdateTask(t *testing.T) {
 				Message: "Invalid task format",
 				Code:    http.StatusBadRequest,
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "task repo failed to update task",
@@ -190,6 +233,7 @@ func Test_taskService_UpdateTask(t *testing.T) {
 					Title:  "title",
 					Desc:   "desc",
 					Status: 0,
+					UserID: 1234,
 				}).Return(&errr.AppError{
 					Code:    0,
 					Message: "error message from task repo",
@@ -205,6 +249,10 @@ func Test_taskService_UpdateTask(t *testing.T) {
 				Code:    0,
 				Message: "error message from task repo",
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -216,7 +264,7 @@ func Test_taskService_UpdateTask(t *testing.T) {
 			tt.setupTaskRepo(mtr)
 
 			ts := NewTaskService(mtr)
-			got := ts.UpdateTask(tt.id, tt.taskReq)
+			got := ts.UpdateTask(tt.id, tt.taskReq, tt.claims)
 
 			if tt.appErr == nil && tt.appErr != got {
 				t.Errorf("UpdateTask() failed, got err: %v.", got)
@@ -239,14 +287,19 @@ func Test_taskService_DeleteTask(t *testing.T) {
 		setupTaskRepo func(mtr *mocks.MockTaskRepo)
 		id            string
 		appErr        *errr.AppError
+		claims        models.Claims
 	}{
 		{
 			name: "successfully deleted task",
 			setupTaskRepo: func(mtr *mocks.MockTaskRepo) {
-				mtr.EXPECT().DeleteTask(int64(1234)).Return(nil)
+				mtr.EXPECT().DeleteTask(int64(1234), int64(4321)).Return(nil)
 			},
 			id:     "1234",
 			appErr: nil,
+			claims: models.Claims{
+				ID:   4321,
+				Role: "",
+			},
 		},
 		{
 			name:          "failed to delete task because of invalid id",
@@ -256,11 +309,15 @@ func Test_taskService_DeleteTask(t *testing.T) {
 				Message: "invalid id",
 				Code:    http.StatusBadRequest,
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "task repo failed to delete task",
 			setupTaskRepo: func(mtr *mocks.MockTaskRepo) {
-				mtr.EXPECT().DeleteTask(int64(1234)).Return(&errr.AppError{
+				mtr.EXPECT().DeleteTask(int64(1234), int64(1234)).Return(&errr.AppError{
 					Code:    0,
 					Message: "error message from task repo",
 				})
@@ -269,6 +326,10 @@ func Test_taskService_DeleteTask(t *testing.T) {
 			appErr: &errr.AppError{
 				Code:    0,
 				Message: "error message from task repo",
+			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
 			},
 		},
 	}
@@ -281,7 +342,7 @@ func Test_taskService_DeleteTask(t *testing.T) {
 			tt.setupTaskRepo(mtr)
 			ts := NewTaskService(mtr)
 
-			got := ts.DeleteTask(tt.id)
+			got := ts.DeleteTask(tt.id, tt.claims)
 			if tt.appErr == nil && tt.appErr != got {
 				t.Errorf("DeleteTask() failed, got err: %v.", got)
 				return
@@ -303,11 +364,12 @@ func Test_taskService_GetTasks(t *testing.T) {
 		setupTaskRepo func(mtr *mocks.MockTaskRepo)
 		appErr        *errr.AppError
 		want          []models.TaskResponseDto
+		claims        models.Claims
 	}{
 		{
 			name: "successfully got task",
 			setupTaskRepo: func(mtr *mocks.MockTaskRepo) {
-				mtr.EXPECT().GetTasks().Return([]models.Task{
+				mtr.EXPECT().GetTasks(int64(1234)).Return([]models.Task{
 					{
 						ID:     1234,
 						Title:  "my title",
@@ -337,11 +399,15 @@ func Test_taskService_GetTasks(t *testing.T) {
 					Status: "Done",
 				},
 			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
+			},
 		},
 		{
 			name: "task repo failed to get task",
 			setupTaskRepo: func(mtr *mocks.MockTaskRepo) {
-				mtr.EXPECT().GetTasks().Return(nil, &errr.AppError{
+				mtr.EXPECT().GetTasks(int64(1234)).Return(nil, &errr.AppError{
 					Code:    0,
 					Message: "error message from task repo",
 				})
@@ -349,6 +415,10 @@ func Test_taskService_GetTasks(t *testing.T) {
 			appErr: &errr.AppError{
 				Code:    0,
 				Message: "error message from task repo",
+			},
+			claims: models.Claims{
+				ID:   1234,
+				Role: "",
 			},
 		},
 	}
@@ -361,7 +431,7 @@ func Test_taskService_GetTasks(t *testing.T) {
 			tt.setupTaskRepo(mtr)
 			ts := NewTaskService(mtr)
 
-			got, err := ts.GetTasks()
+			got, err := ts.GetTasks(tt.claims)
 
 			if tt.appErr == nil && tt.appErr != err {
 				t.Errorf("DeleteTask() failed, got err: %v.", got)
