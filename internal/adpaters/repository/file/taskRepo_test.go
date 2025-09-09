@@ -433,6 +433,7 @@ func Test_taskRepo_DeleteTask(t *testing.T) {
 		fp         string
 		setupFile  func(fp string)
 		id         int64
+		userID     int64
 		wantErr    bool
 		errMessage string
 	}{
@@ -454,7 +455,7 @@ func Test_taskRepo_DeleteTask(t *testing.T) {
 			},
 			id:         12234,
 			wantErr:    true,
-			errMessage: "Unable to create task due to internal server error",
+			errMessage: "Unable to delete task due to internal server error",
 		},
 		{
 			name: "unable to write tasks",
@@ -464,7 +465,7 @@ func Test_taskRepo_DeleteTask(t *testing.T) {
 			},
 			id:         12234,
 			wantErr:    true,
-			errMessage: "Unable to create task due to internal server error",
+			errMessage: "Unable to delete task due to internal server error",
 		},
 		{
 			name: "task deleted successfully",
@@ -474,10 +475,12 @@ func Test_taskRepo_DeleteTask(t *testing.T) {
 					"title": "any title",
 					"desc": "any desc",
 					"status": 0,
-					"id": 12234
+					"id": 12234,
+					"user_id": 1234
 					}]`), 0666)
 			},
 			id:      12234,
+			userID:  1234,
 			wantErr: false,
 		},
 	}
@@ -485,12 +488,14 @@ func Test_taskRepo_DeleteTask(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupFile(tt.fp)
 			tr := NewTaskRepo(tt.fp)
-			gotErr := tr.DeleteTask(tt.id)
+			gotErr := tr.DeleteTask(tt.id, tt.userID)
 			if tt.wantErr && gotErr == nil {
-				t.Errorf("UpdateTask() successed unexpectedly")
+				t.Errorf("DeleteTask() successed unexpectedly")
+				return
 			}
 			if !tt.wantErr && gotErr != nil {
-				t.Errorf("UpdateTask() failed, got err %v", gotErr.Message)
+				t.Errorf("DeleteTask() failed, got err %v", gotErr.Message)
+				return
 			}
 			if tt.wantErr && gotErr != nil {
 				if gotErr.Message != tt.errMessage {
@@ -506,6 +511,7 @@ func Test_taskRepo_GetTasks(t *testing.T) {
 		name      string
 		fp        string
 		setupFile func(fp string)
+		userID    int64
 		want      []models.Task
 		err       *errr.AppError
 		wantErr   bool
@@ -530,15 +536,18 @@ func Test_taskRepo_GetTasks(t *testing.T) {
 					"title": "any title",
 					"desc": "any desc",
 					"status": 0,
-					"id": 12234
+					"id": 12234,
+					"user_id": 1234
 					}]`), 0666)
 			},
+			userID: 1234,
 			want: []models.Task{
 				{
 					ID:     12234,
 					Status: 0,
 					Desc:   "any desc",
 					Title:  "any title",
+					UserID: 1234,
 				},
 			},
 		},
@@ -548,7 +557,7 @@ func Test_taskRepo_GetTasks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupFile(tt.fp)
 			tr := NewTaskRepo(tt.fp)
-			got, err := tr.GetTasks()
+			got, err := tr.GetTasks(tt.userID)
 			// TODO: update the condition below to compare got with tt.want.
 			if tt.wantErr && err == nil {
 				t.Errorf("GetTasks successed unexpectedly")
