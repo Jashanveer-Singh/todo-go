@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -34,9 +36,28 @@ type task struct {
 	Status string `json:"status"`
 }
 
+func pressEnterToContinue() {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("\nPress Enter to Continue...")
+	scanner.Scan()
+}
+
+func clearScreen() {
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+}
+
 func main() {
 	input := -1
 
+	clearScreen()
 	fmt.Printf("1. Login\n2. Create User\nChoose: ")
 	fmt.Scan(&input)
 
@@ -59,6 +80,7 @@ func main() {
 }
 
 func handleCreateUser() {
+	clearScreen()
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Enter Username: ")
 	scanner.Scan()
@@ -92,6 +114,7 @@ func handleCreateUser() {
 	}
 	fmt.Println("User created successfully")
 
+	pressEnterToContinue()
 	handleLogin()
 }
 
@@ -124,11 +147,13 @@ func handleLogin() {
 		return
 	}
 	token = "Bearer " + string(data)
+	pressEnterToContinue()
 	handlePostLogin()
 }
 
 func handlePostLogin() {
 	for {
+		clearScreen()
 		input := -1
 		fmt.Println("")
 		fmt.Println("--------------Menu--------------")
@@ -150,6 +175,7 @@ func handlePostLogin() {
 		default:
 			printErrf("Invalid Command\n")
 		}
+		pressEnterToContinue()
 	}
 }
 
