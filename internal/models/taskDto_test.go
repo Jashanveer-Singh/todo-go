@@ -25,6 +25,13 @@ func TestTaskRequestDto_IsValidStatus(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "status is Waiting",
+			taskreq: TaskRequestDto{
+				Status: "Waiting",
+			},
+			want: true,
+		},
+		{
 			name: "status is invalid",
 			taskreq: TaskRequestDto{
 				Status: "Pend",
@@ -72,6 +79,19 @@ func TestTaskRequestDto_ToTask(t *testing.T) {
 				Title:  "title",
 				Desc:   "desc",
 				Status: 1,
+			},
+		},
+		{
+			name: "task in Waiting",
+			taskreq: TaskRequestDto{
+				Title:  "title",
+				Desc:   "desc",
+				Status: "Waiting",
+			},
+			want: Task{
+				Title:  "title",
+				Desc:   "desc",
+				Status: 2,
 			},
 		},
 		{

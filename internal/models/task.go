@@ -24,13 +24,15 @@ func (t Task) StatusAsText() string {
 		return "Pending"
 	case 1:
 		return "Done"
+	case 2:
+		return "Waiting"
 	default:
 		return "Invalid Status"
 	}
 }
 
 func (t Task) IsValidStatus() bool {
-	return t.Status == 0 || t.Status == 1
+	return t.Status == 0 || t.Status == 1 || t.Status == 2
 }
 
 func (t Task) ToDto() TaskResponseDto {
