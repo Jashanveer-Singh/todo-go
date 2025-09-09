@@ -4,16 +4,33 @@ import (
 	"net/http"
 )
 
-func newRouter(taskHandler *taskHandler, userHandler *userHandler) http.Handler {
+func newRouter(
+	taskHandler *taskHandler,
+	userHandler *userHandler,
+	authHandler *authHandler,
+	authMiddleware *AuthMiddleware,
+) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /tasks", taskHandler.GetTasksHandler)
-	mux.HandleFunc("POST /tasks", taskHandler.CreateTaskHandler)
-	mux.HandleFunc("PUT /tasks/{id}", taskHandler.UpdateTaskHandler)
-	mux.HandleFunc("DELETE /tasks/{id}", taskHandler.DeleteTaskHandler)
+	mux.HandleFunc(
+		"GET /tasks",
+		authMiddleware.isAuthenticatedMiddleware(taskHandler.GetTasksHandler),
+	)
+	mux.HandleFunc(
+		"POST /tasks",
+		authMiddleware.isAuthenticatedMiddleware(taskHandler.CreateTaskHandler),
+	)
+	mux.HandleFunc(
+		"PUT /tasks/{id}",
+		authMiddleware.isAuthenticatedMiddleware(taskHandler.UpdateTaskHandler),
+	)
+	mux.HandleFunc(
+		"DELETE /tasks/{id}",
+		authMiddleware.isAuthenticatedMiddleware(taskHandler.DeleteTaskHandler),
+	)
 
 	mux.HandleFunc("POST /users", userHandler.CreateUserHandler)
-	mux.HandleFunc("POST /users/login", userHandler.Login)
+	mux.HandleFunc("POST /auth", authHandler.Login)
 
 	return mux
 }

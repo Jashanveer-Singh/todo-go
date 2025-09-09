@@ -6,21 +6,32 @@ import (
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
-func NewHttpServer(ts ports.TaskService, us ports.UserService) httpServer {
+func NewHttpServer(
+	taskService ports.TaskService,
+	userService ports.UserService,
+	authService ports.AuthService,
+	tokenProvider ports.TokenProvider,
+) httpServer {
 	return httpServer{
-		ts: ts,
-		us: us,
+		taskService:   taskService,
+		userService:   userService,
+		tokenProvider: tokenProvider,
+		authService:   authService,
 	}
 }
 
 type httpServer struct {
-	ts ports.TaskService
-	us ports.UserService
+	taskService   ports.TaskService
+	userService   ports.UserService
+	tokenProvider ports.TokenProvider
+	authService   ports.AuthService
 }
 
 func (hs httpServer) ListenAndServe(addr string) {
-	taskHandler := newTaskHandler(hs.ts)
-	userHandler := NewUserHandler(hs.us)
-	router := newRouter(taskHandler, userHandler)
+	taskHandler := newTaskHandler(hs.taskService)
+	userHandler := NewUserHandler(hs.userService)
+	authHandler := NewAuthHandler(hs.authService)
+	authMiddleware := NewAuthMiddleware(hs.tokenProvider)
+	router := newRouter(taskHandler, userHandler, authHandler, authMiddleware)
 	http.ListenAndServe(addr, router)
 }
