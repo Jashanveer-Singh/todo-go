@@ -130,7 +130,7 @@ func (tr *taskRepo) DeleteTask(id int64, userID int64) *errr.AppError {
 	defer tr.mu.Unlock()
 	tasks, err := tr.getTasks()
 	if err != nil {
-		return errr.NewUnexpectedError("Unable to create task due to internal server error")
+		return errr.NewUnexpectedError("Unable to delete task due to internal server error")
 	}
 
 	notFound := true

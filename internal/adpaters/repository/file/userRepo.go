@@ -59,7 +59,7 @@ func (ur *userRepo) writeUsersToFile(users []models.User) error {
 
 	err := os.WriteFile(ur.fp, []byte(userjson), 0666)
 	if err != nil {
-		return fmt.Errorf("Failed to users to file.\n%s", err.Error())
+		return fmt.Errorf("failed to write users to file.\n%s", err.Error())
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func (ur *userRepo) CreateUser(user models.User) *errr.AppError {
 
 	for i := range users {
 		if users[i].Username == user.Username {
-			return errr.NewDuplicateError("user already exist")
+			return errr.NewDuplicateError("user already exists")
 		}
 	}
 
