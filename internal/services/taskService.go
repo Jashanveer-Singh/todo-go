@@ -11,13 +11,11 @@ import (
 
 type taskService struct {
 	taskRepo ports.TaskRepo
-	// authService ports.AuthService
 }
 
 func NewTaskService(taskRepo ports.TaskRepo) *taskService {
 	return &taskService{
 		taskRepo: taskRepo,
-		// authService: authService,
 	}
 }
 
