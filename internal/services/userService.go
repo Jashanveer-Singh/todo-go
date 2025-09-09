@@ -1,48 +1,39 @@
 package services
 
 import (
-	"strconv"
-
 	"github.com/Jashanveer-Singh/todo-go/internal/errr"
 	"github.com/Jashanveer-Singh/todo-go/internal/models"
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
-func NewUserService(ur ports.UserRepo) *userService {
+func NewUserService(userRepo ports.UserRepo, passwordHasher ports.PasswordHasher) *userService {
 	return &userService{
-		ur: ur,
+		userRepo:       userRepo,
+		passwordHasher: passwordHasher,
 	}
 }
 
 type userService struct {
-	ur ports.UserRepo
+	userRepo       ports.UserRepo
+	passwordHasher ports.PasswordHasher
 }
 
-func (us *userService) CreateUser(userReq models.UserRequestDto) *errr.AppError {
+func (as *userService) CreateUser(userReq models.UserRequestDto) *errr.AppError {
 	user := userReq.ToUser()
 
 	if !user.IsValidUser() {
 		return errr.NewBadRequestError("Invalid user data")
 	}
+	hash, err := as.passwordHasher.Hash(user.Password)
+	if err != nil {
+		return errr.NewUnexpectedError(err.Error())
+	}
+	user.Password = hash
 
-	appErr := us.ur.CreateUser(user)
+	appErr := as.userRepo.CreateUser(user)
 	if appErr != nil {
 		return appErr
 	}
 
 	return nil
-}
-
-func (us *userService) Login(username, password string) (string, *errr.AppError) {
-	user, appErr := us.ur.GetUserByUsername(username)
-	if appErr != nil {
-		return "", appErr
-	}
-
-	if user.Password == password {
-		idString := strconv.FormatInt(user.ID, 10)
-		return idString, nil
-	}
-
-	return "", errr.NewUnauthenticatedError("Invalid Username or password")
 }
