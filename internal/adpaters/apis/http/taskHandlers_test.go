@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +10,7 @@ import (
 
 	"github.com/Jashanveer-Singh/todo-go/internal/errr"
 	"github.com/Jashanveer-Singh/todo-go/internal/models"
-	"github.com/Jashanveer-Singh/todo-go/internal/ports/mocks"
+	"github.com/Jashanveer-Singh/todo-go/test/mocks"
 	"github.com/golang/mock/gomock"
 )
 
@@ -25,7 +26,7 @@ func Test_taskHandler_GetTasksHandler(t *testing.T) {
 		{
 			name: "successful response",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().GetTasks().Return([]models.TaskResponseDto{
+				mts.EXPECT().GetTasks(models.Claims{ID: 4321}).Return([]models.TaskResponseDto{
 					{
 						ID:     "1234",
 						Title:  "title",
@@ -40,7 +41,7 @@ func Test_taskHandler_GetTasksHandler(t *testing.T) {
 		{
 			name: "task service get task returns error",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().GetTasks().Return(nil, &errr.AppError{
+				mts.EXPECT().GetTasks(models.Claims{ID: 4321}).Return(nil, &errr.AppError{
 					Code:    http.StatusInternalServerError,
 					Message: "error message",
 				})
@@ -52,6 +53,9 @@ func Test_taskHandler_GetTasksHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/tasks", nil)
+			req = req.WithContext(context.WithValue(req.Context(), "claims", models.Claims{
+				ID: 4321,
+			}))
 			rr := httptest.NewRecorder()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
@@ -82,11 +86,11 @@ func Test_taskHandler_UpdateTaskHandler(t *testing.T) {
 		{
 			name: "successful response",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().UpdateTask("", models.TaskRequestDto{
+				mts.EXPECT().UpdateTask("1234324", models.TaskRequestDto{
 					Title:  "title",
 					Desc:   "desc",
 					Status: "Pending",
-				}).Return(nil)
+				}, models.Claims{ID: 4321}).Return(nil)
 			},
 			url: "/tasks/1234324",
 			requestBody: strings.NewReader(`{
@@ -100,9 +104,9 @@ func Test_taskHandler_UpdateTaskHandler(t *testing.T) {
 		{
 			name: "only title is updated",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().UpdateTask("", models.TaskRequestDto{
+				mts.EXPECT().UpdateTask("1234324", models.TaskRequestDto{
 					Title: "title",
-				}).Return(nil)
+				}, models.Claims{ID: 4321}).Return(nil)
 			},
 			url:          "/tasks/1234324",
 			requestBody:  strings.NewReader(`{"title": "title"}`),
@@ -112,9 +116,9 @@ func Test_taskHandler_UpdateTaskHandler(t *testing.T) {
 		{
 			name: "only description is updated",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().UpdateTask("", models.TaskRequestDto{
+				mts.EXPECT().UpdateTask("1234324", models.TaskRequestDto{
 					Desc: "desc",
-				}).Return(nil)
+				}, models.Claims{ID: 4321}).Return(nil)
 			},
 			url:          "/tasks/1234324",
 			requestBody:  strings.NewReader(`{"desc": "desc"}`),
@@ -132,10 +136,12 @@ func Test_taskHandler_UpdateTaskHandler(t *testing.T) {
 		{
 			name: "task service returns error",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().UpdateTask("", models.TaskRequestDto{}).Return(&errr.AppError{
-					Code:    http.StatusBadGateway,
-					Message: "error message",
-				})
+				mts.EXPECT().
+					UpdateTask("123", models.TaskRequestDto{}, models.Claims{ID: 4321}).
+					Return(&errr.AppError{
+						Code:    http.StatusBadGateway,
+						Message: "error message",
+					})
 			},
 			url:          "/tasks/123",
 			requestBody:  strings.NewReader("{}"),
@@ -145,15 +151,25 @@ func Test_taskHandler_UpdateTaskHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tt.url, tt.requestBody)
+			req := httptest.NewRequest(http.MethodPut, tt.url, tt.requestBody)
+			req.Header.Set("Authorization", "Bearer token")
 			rr := httptest.NewRecorder()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockTaskService := mocks.NewMockTaskService(ctrl)
+			taskServiceCtrl := gomock.NewController(t)
+			defer taskServiceCtrl.Finish()
+			mockTaskService := mocks.NewMockTaskService(taskServiceCtrl)
 			tt.setupMTS(mockTaskService)
+
+			tokenProviderCtrl := gomock.NewController(t)
+			defer tokenProviderCtrl.Finish()
+			mockTokenProvider := mocks.NewMockTokenProvider(tokenProviderCtrl)
+			mockTokenProvider.EXPECT().ValidateToken("token").Return(models.Claims{ID: 4321}, nil)
+
+			am := NewAuthMiddleware(mockTokenProvider)
 			th := newTaskHandler(mockTaskService)
-			th.UpdateTaskHandler(rr, req)
+			uh := NewUserHandler(nil)
+			ah := NewAuthHandler(nil)
+			router := newRouter(th, uh, ah, am)
+			router.ServeHTTP(rr, req)
 			if rr.Code != tt.wantStatus {
 				t.Errorf("wanted status code %d, got %d.", tt.wantStatus, rr.Code)
 			}
@@ -168,25 +184,28 @@ func Test_taskHandler_DeleteTaskHandler(t *testing.T) {
 	tests := []struct {
 		name         string
 		setupMTS     func(*mocks.MockTaskService)
+		url          string
 		wantStatus   int
 		responseBody string
 	}{
 		{
 			name: "successful response",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().DeleteTask("").Return(nil)
+				mts.EXPECT().DeleteTask("1234", models.Claims{ID: 4321}).Return(nil)
 			},
+			url:          "/tasks/1234",
 			wantStatus:   http.StatusNoContent,
 			responseBody: "",
 		},
 		{
 			name: "task service returns error",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().DeleteTask("").Return(&errr.AppError{
+				mts.EXPECT().DeleteTask("1234", models.Claims{ID: 4321}).Return(&errr.AppError{
 					Code:    http.StatusBadGateway,
 					Message: "error message",
 				})
 			},
+			url:          "/tasks/1234",
 			wantStatus:   http.StatusBadGateway,
 			responseBody: "error message\n",
 		},
@@ -194,15 +213,25 @@ func Test_taskHandler_DeleteTaskHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/tasks/asdf", nil)
+			req := httptest.NewRequest(http.MethodDelete, tt.url, nil)
+			req.Header.Set("Authorization", "Bearer token")
 			rr := httptest.NewRecorder()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockTaskService := mocks.NewMockTaskService(ctrl)
+			taskServiceCtrl := gomock.NewController(t)
+			defer taskServiceCtrl.Finish()
+			mockTaskService := mocks.NewMockTaskService(taskServiceCtrl)
 			tt.setupMTS(mockTaskService)
+
+			tokenProviderCtrl := gomock.NewController(t)
+			defer tokenProviderCtrl.Finish()
+			mockTokenProvider := mocks.NewMockTokenProvider(tokenProviderCtrl)
+			mockTokenProvider.EXPECT().ValidateToken("token").Return(models.Claims{ID: 4321}, nil)
+
+			am := NewAuthMiddleware(mockTokenProvider)
 			th := newTaskHandler(mockTaskService)
-			th.DeleteTaskHandler(rr, req)
+			uh := NewUserHandler(nil)
+			ah := NewAuthHandler(nil)
+			router := newRouter(th, uh, ah, am)
+			router.ServeHTTP(rr, req)
 			if rr.Code != tt.wantStatus {
 				t.Errorf("wanted status code %d, got %d.", tt.wantStatus, rr.Code)
 			}
@@ -227,19 +256,21 @@ func Test_taskHandler_CreateTaskHandler(t *testing.T) {
 				mts.EXPECT().CreateTask(models.TaskRequestDto{
 					Title: "title",
 					Desc:  "desc",
-				}).Return(nil)
+				}, models.Claims{ID: 4321}).Return(nil)
 			},
 			requestBody:  strings.NewReader(`{"title":"title","desc":"desc"}`),
 			wantStatus:   http.StatusCreated,
-			responseBody: "",
+			responseBody: "task created successfully",
 		},
 		{
 			name: "task service returns error",
 			setupMTS: func(mts *mocks.MockTaskService) {
-				mts.EXPECT().CreateTask(models.TaskRequestDto{}).Return(&errr.AppError{
-					Code:    http.StatusBadGateway,
-					Message: "error message",
-				})
+				mts.EXPECT().
+					CreateTask(models.TaskRequestDto{}, models.Claims{ID: 4321}).
+					Return(&errr.AppError{
+						Code:    http.StatusBadGateway,
+						Message: "error message",
+					})
 			},
 			requestBody:  strings.NewReader("{}"),
 			wantStatus:   http.StatusBadGateway,
@@ -256,11 +287,14 @@ func Test_taskHandler_CreateTaskHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/tasks/asdf", tt.requestBody)
+			req = req.WithContext(context.WithValue(req.Context(), "claims", models.Claims{
+				ID: 4321,
+			}))
 			rr := httptest.NewRecorder()
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			taskServiceCtrl := gomock.NewController(t)
+			defer taskServiceCtrl.Finish()
 
-			mockTaskService := mocks.NewMockTaskService(ctrl)
+			mockTaskService := mocks.NewMockTaskService(taskServiceCtrl)
 			tt.setupMTS(mockTaskService)
 			th := newTaskHandler(mockTaskService)
 			th.CreateTaskHandler(rr, req)
