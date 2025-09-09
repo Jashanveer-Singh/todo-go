@@ -10,7 +10,7 @@ func (trd TaskRequestDto) IsValidStatus() bool {
 	switch trd.Status {
 	default:
 		return false
-	case "Pending", "Done":
+	case "Pending", "Done", "Waiting":
 		return true
 	}
 }
@@ -22,6 +22,8 @@ func (trd TaskRequestDto) ToTask() Task {
 		status = 0
 	case "Done":
 		status = 1
+	case "Waiting":
+		status = 2
 	default:
 		status = -1
 	}

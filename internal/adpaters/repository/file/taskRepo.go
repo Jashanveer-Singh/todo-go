@@ -97,6 +97,9 @@ func (tr *taskRepo) UpdateTask(id int64, task models.Task) *errr.AppError {
 	for i := range tasks {
 		if tasks[i].ID == id {
 			notFound = false
+			if tasks[i].UserID != task.UserID {
+				return errr.NewUnauthorizedError("Unauthorized to update task")
+			}
 			if len(task.Title) != 0 {
 				tasks[i].Title = task.Title
 			}
@@ -122,12 +125,12 @@ func (tr *taskRepo) UpdateTask(id int64, task models.Task) *errr.AppError {
 	return nil
 }
 
-func (tr *taskRepo) DeleteTask(id int64) *errr.AppError {
+func (tr *taskRepo) DeleteTask(id int64, userID int64) *errr.AppError {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 	tasks, err := tr.getTasks()
 	if err != nil {
-		return errr.NewUnexpectedError("Unable to create task due to internal server error")
+		return errr.NewUnexpectedError("Unable to delete task due to internal server error")
 	}
 
 	notFound := true
@@ -135,6 +138,9 @@ func (tr *taskRepo) DeleteTask(id int64) *errr.AppError {
 	for i := range tasks {
 		if tasks[i].ID == id {
 			notFound = false
+			if tasks[i].UserID != userID {
+				return errr.NewUnauthorizedError("Unauthorized to delete task")
+			}
 			tasks = append(tasks[:i], tasks[i+1:]...)
 			break
 		}
@@ -152,7 +158,7 @@ func (tr *taskRepo) DeleteTask(id int64) *errr.AppError {
 	return nil
 }
 
-func (tr *taskRepo) GetTasks() ([]models.Task, *errr.AppError) {
+func (tr *taskRepo) GetTasks(userID int64) ([]models.Task, *errr.AppError) {
 	tr.mu.RLock()
 	defer tr.mu.RUnlock()
 
@@ -160,6 +166,12 @@ func (tr *taskRepo) GetTasks() ([]models.Task, *errr.AppError) {
 	if err != nil {
 		return nil, errr.NewUnexpectedError("Unable to create task due to internal server error")
 	}
+	filteredTasks := []models.Task{}
+	for _, task := range tasks {
+		if task.UserID == userID {
+			filteredTasks = append(filteredTasks, task)
+		}
+	}
 
-	return tasks, nil
+	return filteredTasks, nil
 }

@@ -5,6 +5,6 @@ import (
 )
 
 func Test_httpServer_ListenAndServe(t *testing.T) {
-	hs := NewHttpServer(nil)
+	hs := NewHttpServer(nil, nil, nil, nil)
 	go hs.ListenAndServe(":8000")
 }

@@ -82,6 +82,13 @@ func TestTask_StatusAsText(t *testing.T) {
 			},
 		},
 		{
+			name: "status Waiting",
+			want: "Waiting",
+			task: Task{
+				Status: 2,
+			},
+		},
+		{
 			name: "status invalid",
 			want: "Invalid Status",
 			task: Task{
@@ -114,6 +121,13 @@ func TestTask_IsValidStatus(t *testing.T) {
 			name: "status is done",
 			task: Task{
 				Status: 1,
+			},
+			want: true,
+		},
+		{
+			name: "status is waiting",
+			task: Task{
+				Status: 2,
 			},
 			want: true,
 		},

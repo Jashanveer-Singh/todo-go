@@ -9,26 +9,23 @@ import (
 	"github.com/Jashanveer-Singh/todo-go/internal/ports"
 )
 
-type TaskService interface {
-	CreateTask(models.TaskRequestDto) *errr.AppError
-	UpdateTask(id string, task models.TaskRequestDto) *errr.AppError
-	DeleteTask(id string) *errr.AppError
-	GetTasks() ([]models.TaskResponseDto, *errr.AppError)
-}
-
 type taskService struct {
 	taskRepo ports.TaskRepo
 }
 
 func NewTaskService(taskRepo ports.TaskRepo) *taskService {
 	return &taskService{
-		taskRepo,
+		taskRepo: taskRepo,
 	}
 }
 
-func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError {
+func (ts *taskService) CreateTask(
+	taskReq models.TaskRequestDto,
+	claims models.Claims,
+) *errr.AppError {
 	task := taskReq.ToTask()
-	task.Status = 0
+	task.Status = 2
+	task.UserID = claims.ID
 	if !task.IsValidTask() {
 		return &errr.AppError{
 			Message: "Invalid task",
@@ -44,13 +41,14 @@ func (ts *taskService) CreateTask(taskReq models.TaskRequestDto) *errr.AppError 
 	return nil
 }
 
-func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto) *errr.AppError {
-	id, err := strconv.ParseInt(idString, 10, 64)
+func (ts *taskService) UpdateTask(
+	taskIDStr string,
+	taskReq models.TaskRequestDto,
+	claims models.Claims,
+) *errr.AppError {
+	taskID, err := strconv.ParseInt(taskIDStr, 10, 64)
 	if err != nil {
-		return &errr.AppError{
-			Code:    http.StatusBadRequest,
-			Message: "invalid id",
-		}
+		return errr.NewBadRequestError("Invalid task id")
 	}
 
 	if taskReq.Title == "" && taskReq.Desc == "" && !taskReq.IsValidStatus() {
@@ -60,8 +58,9 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 		}
 	}
 	task := taskReq.ToTask()
+	task.UserID = claims.ID
 
-	appErr := ts.taskRepo.UpdateTask(id, task)
+	appErr := ts.taskRepo.UpdateTask(taskID, task)
 	if appErr != nil {
 		return appErr
 	}
@@ -69,7 +68,7 @@ func (ts *taskService) UpdateTask(idString string, taskReq models.TaskRequestDto
 	return nil
 }
 
-func (ts *taskService) DeleteTask(idString string) *errr.AppError {
+func (ts *taskService) DeleteTask(idString string, claims models.Claims) *errr.AppError {
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
 		return &errr.AppError{
@@ -78,7 +77,7 @@ func (ts *taskService) DeleteTask(idString string) *errr.AppError {
 		}
 	}
 
-	appErr := ts.taskRepo.DeleteTask(id)
+	appErr := ts.taskRepo.DeleteTask(id, claims.ID)
 	if appErr != nil {
 		return appErr
 	}
@@ -86,8 +85,8 @@ func (ts *taskService) DeleteTask(idString string) *errr.AppError {
 	return nil
 }
 
-func (ts *taskService) GetTasks() ([]models.TaskResponseDto, *errr.AppError) {
-	tasks, appErr := ts.taskRepo.GetTasks()
+func (ts *taskService) GetTasks(claims models.Claims) ([]models.TaskResponseDto, *errr.AppError) {
+	tasks, appErr := ts.taskRepo.GetTasks(claims.ID)
 	if appErr != nil {
 		return nil, appErr
 	}
